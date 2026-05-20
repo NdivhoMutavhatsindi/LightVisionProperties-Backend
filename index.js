@@ -34,6 +34,7 @@ const uploadsDir = path.join(__dirname, "uploads");
 const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
 const allowedOrigins = [
   clientUrl,
+  "https://tanstack-start-app.ndivhopas.workers.dev",
   "http://localhost:8080",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
