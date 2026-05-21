@@ -48,7 +48,9 @@ app.use(cors({ origin: allowedOrigins, credentials: true }));
 // allowed origins always receive the correct Access-Control-Allow-* headers.
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin) {
+    // Echo the request Origin back in ACAO to satisfy browsers.
+    // This is intentionally permissive to work around downstream proxies.
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader(
