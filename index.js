@@ -41,6 +41,9 @@ const allowedOrigins = [
   "http://127.0.0.1:8080",
 ];
 
+// Identify the Cloudflare Worker origin so we can treat proxied requests specially
+const WORKER_ORIGIN = "https://tanstack-start-app.ndivhopas.workers.dev";
+
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
@@ -83,6 +86,19 @@ app.use(
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 120 : 1000,
+  // Skip rate limiting for requests proxied from our Cloudflare Worker to avoid
+  // counting internal proxy traffic against client rate limits.
+  skip: (req) => {
+    try {
+      const origin = req.headers && req.headers.origin;
+      if (origin && origin === WORKER_ORIGIN) return true;
+      // Also allow an explicit header set by the Worker proxy (optional)
+      if (req.headers && (req.headers['x-worker-proxy'] === '1' || req.headers['x-forwarded-by-worker'] === '1')) return true;
+    } catch (e) {
+      // ignore errors and do not skip by default
+    }
+    return false;
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests. Please wait a moment and try again.",
