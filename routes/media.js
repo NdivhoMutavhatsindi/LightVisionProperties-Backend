@@ -14,8 +14,7 @@ const uploadsDir = path.join(__dirname, "../uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 const getLocalUrl = (req, filename) => {
-  const host = process.env.SERVER_BASE_URL ?? `${req.protocol}://${req.get("host")}`;
-  return `${host}/uploads/${filename}`;
+  return `/uploads/${filename}`;
 };
 
 const saveLocalFile = async (req, file) => {
