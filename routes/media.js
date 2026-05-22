@@ -13,17 +13,17 @@ const __dirname = path.dirname(__filename);
 const uploadsDir = path.join(__dirname, "../uploads");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
-const getLocalUrl = (filename) => {
-  const host = process.env.SERVER_BASE_URL ?? `http://localhost:${process.env.PORT ?? 5000}`;
+const getLocalUrl = (req, filename) => {
+  const host = process.env.SERVER_BASE_URL ?? `${req.protocol}://${req.get("host")}`;
   return `${host}/uploads/${filename}`;
 };
 
-const saveLocalFile = async (file) => {
+const saveLocalFile = async (req, file) => {
   const extension = path.extname(file.originalname) || ".jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`;
   const filePath = path.join(uploadsDir, filename);
   await fs.promises.writeFile(filePath, file.buffer);
-  return { url: getLocalUrl(filename), publicId: filename };
+  return { url: getLocalUrl(req, filename), publicId: filename };
 };
 
 router.post("/upload", upload.single("file"), async (req, res) => {
@@ -53,13 +53,13 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       return res.json({ url: uploadResult.secure_url, publicId: uploadResult.public_id });
     }
 
-    const localResult = await saveLocalFile(req.file);
+    const localResult = await saveLocalFile(req, req.file);
     res.json(localResult);
   } catch (error) {
     console.error("Media upload failed:", error);
     if (!cloudinaryConfigured) {
       try {
-        const localResult = await saveLocalFile(req.file);
+        const localResult = await saveLocalFile(req, req.file);
         return res.json(localResult);
       } catch (localError) {
         console.error("Local fallback upload failed:", localError);
