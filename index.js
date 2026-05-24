@@ -12,7 +12,7 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
 import { Server as SocketIOServer } from "socket.io";
-import { sequelize } from "./models/index.js";
+import { prisma } from "./config/prisma.js";
 import authRoutes from "./routes/auth.js";
 import contactRoutes from "./routes/contact.js";
 import mediaRoutes from "./routes/media.js";
@@ -21,6 +21,13 @@ import propertiesRoutes from "./routes/properties.js";
 import agentsRoutes from "./routes/agents.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import valuationsRoutes from "./routes/valuations.js";
+import careersRoutes from "./routes/careers.js";
+import bondApplicationsRoutes from "./routes/bond-applications.js";
+import prequalificationApplicationsRoutes from "./routes/prequalification-applications.js";
+import offerToPurchaseRoutes from "./routes/offer-to-purchase.js";
+import complianceRequestsRoutes from "./routes/compliance-requests.js";
+import legalAdviceRequestsRoutes from "./routes/legal-advice-requests.js";
+import jobApplicationsRoutes from "./routes/job-applications.js";
 import { initSocket } from "./socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -113,6 +120,13 @@ app.use("/api/properties", propertiesRoutes);
 app.use("/api/agents", agentsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/valuations", valuationsRoutes);
+app.use("/api/careers", careersRoutes);
+app.use("/api/bond-applications", bondApplicationsRoutes);
+app.use("/api/prequalification-applications", prequalificationApplicationsRoutes);
+app.use("/api/offer-to-purchase", offerToPurchaseRoutes);
+app.use("/api/compliance-requests", complianceRequestsRoutes);
+app.use("/api/legal-advice-requests", legalAdviceRequestsRoutes);
+app.use("/api/job-applications", jobApplicationsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
@@ -131,10 +145,10 @@ app.set("io", io);
 initSocket(io);
 
 try {
-  await sequelize.authenticate();
-        console.log("Database authentication succeeded.");
+  await prisma.$connect();
+  console.log("Database authentication succeeded.");
 } catch (error) {
-    console.error("Unable to authenticate to the database:", error);
+  console.error("Unable to authenticate to the database:", error);
 }
 
 server.listen(port, () => {

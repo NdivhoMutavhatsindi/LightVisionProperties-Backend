@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model admins {
+  admin_id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  password_hash String
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  last_login    DateTime? @db.Timestamp(6)
+}
+
+model agents {
+  agent_id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name    String    @db.VarChar(100)
+  last_name     String    @db.VarChar(100)
+  email         String?   @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  facebook_url  String?
+  instagram_url String?
+  whatsapp_url  String?
+  twitter_url   String?
+  linkedin_url  String?
+  profile_image String?
+  bio           String?
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model bond_applications {
+  bond_application_id  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name           String    @db.VarChar(100)
+  last_name            String    @db.VarChar(100)
+  email                String    @db.VarChar(255)
+  phone                String    @db.VarChar(20)
+  id_number            String    @db.VarChar(50)
+  marital_status       String?   @db.VarChar(50)
+  employment_status    String?   @db.VarChar(100)
+  employer_name        String?   @db.VarChar(255)
+  base_salary          Decimal?  @default(0) @db.Decimal(12, 2)
+  allowances           Decimal?  @default(0) @db.Decimal(12, 2)
+  other_income         Decimal?  @default(0) @db.Decimal(12, 2)
+  gross_income         Decimal?  @default(0) @db.Decimal(12, 2)
+  monthly_expenses     Decimal?  @default(0) @db.Decimal(12, 2)
+  available_for_bond   Decimal?  @default(0) @db.Decimal(12, 2)
+  debt_to_income_ratio Decimal?  @default(0) @db.Decimal(5, 2)
+  disposable_income    Decimal?  @default(0) @db.Decimal(12, 2)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model careers {
+  career_id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title            String             @db.VarChar(255)
+  location         String             @db.VarChar(255)
+  employment_type  String             @db.VarChar(50)
+  description      String
+  is_active        Boolean?           @default(true)
+  created_at       DateTime?          @default(now()) @db.Timestamp(6)
+  job_applications job_applications[]
+}
+
+model client_requests {
+  request_id   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_type String    @db.VarChar(100)
+  reference_id String    @db.Uuid
+  client_email String    @db.VarChar(255)
+  status       String?   @default("pending") @db.VarChar(50)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([client_email], map: "idx_client_requests_client_email")
+  @@index([request_type], map: "idx_client_requests_request_type")
+}
+
+model compliance_requests {
+  compliance_request_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name            String    @db.VarChar(100)
+  last_name             String    @db.VarChar(100)
+  email                 String    @db.VarChar(255)
+  phone                 String    @db.VarChar(20)
+  message               String
+  status                String?   @default("pending") @db.VarChar(50)
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model job_applications {
+  application_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  career_id      String    @db.Uuid
+  first_name     String    @db.VarChar(100)
+  last_name      String    @db.VarChar(100)
+  email          String    @db.VarChar(255)
+  phone          String    @db.VarChar(20)
+  cv_url         String
+  cover_letter   String?
+  status         String?   @default("pending") @db.VarChar(50)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  careers        careers   @relation(fields: [career_id], references: [career_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_job_applications_career")
+
+  @@index([career_id], map: "idx_job_applications_career_id")
+}
+
+model legal_advice_requests {
+  legal_request_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name       String    @db.VarChar(100)
+  last_name        String    @db.VarChar(100)
+  email            String    @db.VarChar(255)
+  phone            String    @db.VarChar(20)
+  message          String
+  status           String?   @default("pending") @db.VarChar(50)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model offers_to_purchase {
+  offer_id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id        String     @db.Uuid
+  first_name         String     @db.VarChar(100)
+  last_name          String     @db.VarChar(100)
+  email              String     @db.VarChar(255)
+  phone              String     @db.VarChar(20)
+  offer_document_url String
+  offer_amount       Decimal?   @db.Decimal(12, 2)
+  status             String?    @default("pending") @db.VarChar(50)
+  created_at         DateTime?  @default(now()) @db.Timestamp(6)
+  properties         properties @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_offers_to_purchase_property")
+
+  @@index([property_id], map: "idx_offers_to_purchase_property_id")
+}
+
+model prequalification_applications {
+  prequalification_id  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name           String    @db.VarChar(100)
+  last_name            String    @db.VarChar(100)
+  id_number            String    @db.VarChar(50)
+  marital_status       String?   @db.VarChar(50)
+  email                String    @db.VarChar(255)
+  phone                String    @db.VarChar(20)
+  employment_status    String    @db.VarChar(100)
+  employer_name        String?   @db.VarChar(255)
+  gross_monthly_income Decimal   @db.Decimal(12, 2)
+  monthly_expenses     Decimal   @db.Decimal(12, 2)
+  property_type        String?   @db.VarChar(100)
+  price_range          String?   @db.VarChar(100)
+  deposit_available    Decimal?  @db.Decimal(12, 2)
+  status               String?   @default("pending") @db.VarChar(50)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model properties {
+  property_id        String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title              String               @db.VarChar(255)
+  description        String
+  location           String               @db.VarChar(255)
+  bedrooms           Int
+  bathrooms          Int
+  price              Decimal              @db.Decimal(12, 2)
+  property_type      String               @db.VarChar(100)
+  status             String?              @default("available") @db.VarChar(50)
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamp(6)
+  offers_to_purchase offers_to_purchase[]
+  property_images    property_images[]
+  property_inquiries property_inquiries[]
+
+  @@index([property_type], map: "idx_properties_property_type")
+  @@index([status], map: "idx_properties_status")
+}
+
+model property_images {
+  image_id      String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id   String     @db.Uuid
+  image_url     String
+  is_primary    Boolean?   @default(false)
+  display_order Int?       @default(0)
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  properties    properties @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_property_images_property")
+
+  @@index([property_id], map: "idx_property_images_property_id")
+}
+
+model property_inquiries {
+  inquiry_id  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id String     @db.Uuid
+  first_name  String     @db.VarChar(100)
+  last_name   String     @db.VarChar(100)
+  email       String     @db.VarChar(255)
+  phone       String     @db.VarChar(20)
+  message     String
+  status      String?    @default("pending") @db.VarChar(50)
+  created_at  DateTime?  @default(now()) @db.Timestamp(6)
+  properties  properties @relation(fields: [property_id], references: [property_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_property_inquiries_property")
+
+  @@index([property_id], map: "idx_property_inquiries_property_id")
+}
+
+model valuation_requests {
+  valuation_request_id String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name           String    @db.VarChar(100)
+  last_name            String    @db.VarChar(100)
+  email                String    @db.VarChar(255)
+  phone                String    @db.VarChar(20)
+  message              String
+  status               String?   @default("pending") @db.VarChar(50)
+  created_at           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+enum blog_status {
+  draft
+  published
+}
+
+enum career_status {
+  open
+  closed
+}
+
+enum enum_users_role {
+  admin
+  agent
+  client
+  legal_advisor
+}
+
+enum enum_users_status {
+  active
+  inactive
+}
+
+enum enum_valuation_requests_status {
+  pending
+  contacted
+  completed
+}
+
+enum offer_status {
+  pending
+  accepted
+  rejected
+}
+
+enum property_purpose {
+  sale
+  rent
+}
+
+enum property_status {
+  available
+  sold
+  rented
+  pending
+}
+
+enum request_status {
+  pending
+  reviewed
+  approved
+  rejected
+}
+
+enum user_role {
+  admin
+  agent
+  client
+  legal_advisor
+}
+
+enum user_status {
+  active
+  inactive
+}
+
+enum valuation_status {
+  pending
+  contacted
+  completed
+}
+
+enum yes_no {
+  yes
+  no
+}

@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcryptjs";
-import { sequelize, User } from "./models/index.js";
+import { sequelize, User, Admin } from "./models/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,36 +17,61 @@ async function main() {
   await sequelize.authenticate();
   await sequelize.sync();
 
-  const existingUser = await User.findOne({ where: { email } });
   const passwordHash = await bcrypt.hash(password, 12);
-  if (existingUser) {
+
+  const [adminRecord, createdAdmin] = await Admin.findOrCreate({
+    where: { email },
+    defaults: {
+      email,
+      passwordHash,
+      lastLogin: null,
+    },
+  });
+
+  if (!createdAdmin) {
     let updated = false;
-    if (existingUser.role !== "admin") {
-      existingUser.role = "admin";
-      updated = true;
-    }
-    if (existingUser.passwordHash !== passwordHash) {
-      existingUser.passwordHash = passwordHash;
+    if (adminRecord.passwordHash !== passwordHash) {
+      adminRecord.passwordHash = passwordHash;
       updated = true;
     }
     if (updated) {
-      await existingUser.save();
-      console.log(`Updated existing admin user: ${email}`);
+      await adminRecord.save();
+      console.log(`Updated existing admin record: ${email}`);
     } else {
-      console.log(`Admin user already exists and is up to date: ${email}`);
+      console.log(`Admin record already exists and is up to date: ${email}`);
     }
-    return;
+  } else {
+    console.log(`Created admin record: ${adminRecord.email}`);
   }
 
-  const adminUser = await User.create({
-    name,
-    email,
-    passwordHash,
-    role: "admin",
-    status: "active",
-  });
+  const existingUser = await User.findOne({ where: { email } });
+  if (!existingUser) {
+    await User.create({
+      name,
+      email,
+      passwordHash,
+      role: "admin",
+      status: "active",
+    });
+    console.log(`Created admin user in users table: ${email}`);
+  } else {
+    let updatedUser = false;
+    if (existingUser.role !== "admin") {
+      existingUser.role = "admin";
+      updatedUser = true;
+    }
+    if (existingUser.passwordHash !== passwordHash) {
+      existingUser.passwordHash = passwordHash;
+      updatedUser = true;
+    }
+    if (updatedUser) {
+      await existingUser.save();
+      console.log(`Updated existing admin user in users table: ${email}`);
+    } else {
+      console.log(`Admin user already exists and is up to date in users table: ${email}`);
+    }
+  }
 
-  console.log(`Created admin user: ${adminUser.email}`);
   console.log(`Password: ${password}`);
 }
 

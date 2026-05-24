@@ -1,54 +1,123 @@
 import express from "express";
-import path from "path";
-import { sequelize, User } from "../models/index.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import { PropertyService } from "../service/PropertyService.js";
+import { AgentService } from "../service/AgentService.js";
+import { CareerService } from "../service/CareerService.js";
+import { JobApplicationService } from "../service/JobApplicationService.js";
+import { ValuationRequestService } from "../service/ValuationRequestService.js";
+import { ComplianceRequestService } from "../service/ComplianceRequestService.js";
+import { BondApplicationService } from "../service/BondApplicationService.js";
+import { PreQualificationApplicationService } from "../service/PreQualificationApplicationService.js";
+import { OfferToPurchaseService } from "../service/OfferToPurchaseService.js";
+import { LegalAdviceRequestService } from "../service/LegalAdviceRequestService.js";
+import { ClientRequestService } from "../service/ClientRequestService.js";
 
 const router = express.Router();
+router.use(authMiddleware);
 
-router.get("/", async (req, res) => {
-  try {
-    const dialect = sequelize.getDialect();
-    let database = null;
-    let tables = [];
+const createCrudRouter = (service, resourceName) => {
+  const resource = express.Router();
 
-    if (dialect === "sqlite") {
-      database = path.basename(sequelize.options.storage || "sqlite");
-      const [tablesResult] = await sequelize.query(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
-      );
-      tables = Array.isArray(tablesResult) ? tablesResult.map((row) => row.name).filter(Boolean) : [];
-    } else if (dialect === "postgres" || dialect === "postgresql") {
-      const [databaseResult] = await sequelize.query("SELECT current_database() AS dbName");
-      database = Array.isArray(databaseResult) && databaseResult[0] ? databaseResult[0].dbName : null;
-      const [tablesResult] = await sequelize.query(
-        "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"
-      );
-      tables = Array.isArray(tablesResult)
-        ? tablesResult.map((row) => row.tablename).filter(Boolean)
-        : [];
-    } else {
-      const [databaseResult] = await sequelize.query("SELECT DATABASE() AS dbName");
-      database = Array.isArray(databaseResult) && databaseResult[0] ? databaseResult[0].dbName : null;
-      const [tablesResult] = await sequelize.query("SHOW TABLES");
-      tables = Array.isArray(tablesResult)
-        ? tablesResult.map((row) => Object.values(row)[0]).filter(Boolean)
-        : [];
-    }
+  resource.get("/", async (req, res) => {
+    const items = await service.getAll(req.query || {});
+    res.json(items);
+  });
 
-    const userCountsRaw = await User.findAll({
-      attributes: ["role", [sequelize.fn("COUNT", sequelize.col("id")), "count"]],
-      group: ["role"],
-    });
+  resource.get("/:id", async (req, res) => {
+    const item = await service.getById(req.params.id);
+    if (!item) return res.status(404).json({ message: `${resourceName} not found.` });
+    res.json(item);
+  });
 
-    const userCounts = userCountsRaw.map((row) => ({
-      role: row.role,
-      count: Number(row.get("count")) || 0,
-    }));
+  resource.post("/", async (req, res) => {
+    const item = await service.create(req.body);
+    res.status(201).json(item);
+  });
 
-    res.json({ database, userCounts, tables });
-  } catch (error) {
-    console.error("Dashboard route error:", error);
-    res.status(500).json({ message: "Unable to load dashboard data." });
-  }
+  resource.put("/:id", async (req, res) => {
+    const item = await service.getById(req.params.id);
+    if (!item) return res.status(404).json({ message: `${resourceName} not found.` });
+    const updated = await service.update(req.params.id, req.body);
+    res.json(updated);
+  });
+
+  resource.delete("/:id", async (req, res) => {
+    const item = await service.getById(req.params.id);
+    if (!item) return res.status(404).json({ message: `${resourceName} not found.` });
+    await service.delete(req.params.id);
+    res.json({ message: `${resourceName} deleted.` });
+  });
+
+  return resource;
+};
+
+router.use("/properties", createCrudRouter(PropertyService, "Property"));
+router.use("/agents", createCrudRouter(AgentService, "Agent"));
+router.use("/careers", createCrudRouter(CareerService, "Career"));
+
+router.get("/submissions", async (req, res) => {
+  const [jobApplications, valuations, complianceRequests, bondApplications, prequalificationApplications, offers, legalRequests, contactMessages] =
+    await Promise.all([
+      JobApplicationService.getAll(),
+      ValuationRequestService.getAll(),
+      ComplianceRequestService.getAll(),
+      BondApplicationService.getAll(),
+      PreQualificationApplicationService.getAll(),
+      OfferToPurchaseService.getAll(),
+      LegalAdviceRequestService.getAll(),
+      ClientRequestService.findAll(),
+    ]);
+
+  res.json({
+    jobApplications,
+    valuations,
+    complianceRequests,
+    bondApplications,
+    prequalificationApplications,
+    offers,
+    legalRequests,
+    contactMessages,
+  });
+});
+
+router.get("/submissions/job-applications", async (req, res) => {
+  const items = await JobApplicationService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/valuation-requests", async (req, res) => {
+  const items = await ValuationRequestService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/compliance-requests", async (req, res) => {
+  const items = await ComplianceRequestService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/bond-applications", async (req, res) => {
+  const items = await BondApplicationService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/prequalification-applications", async (req, res) => {
+  const items = await PreQualificationApplicationService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/offer-to-purchase", async (req, res) => {
+  const items = await OfferToPurchaseService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/legal-advice-requests", async (req, res) => {
+  const items = await LegalAdviceRequestService.getAll();
+  res.json(items);
+});
+
+router.get("/submissions/contact-messages", async (req, res) => {
+  const items = await ClientRequestService.findAll();
+  res.json(items);
 });
 
 export default router;
