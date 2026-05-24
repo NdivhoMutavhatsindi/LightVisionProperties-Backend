@@ -12,7 +12,7 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import morgan from "morgan";
 import { Server as SocketIOServer } from "socket.io";
-import { prisma } from "./config/prisma.js";
+import { sequelize } from "./models/index.js";
 import authRoutes from "./routes/auth.js";
 import contactRoutes from "./routes/contact.js";
 import mediaRoutes from "./routes/media.js";
@@ -21,13 +21,6 @@ import propertiesRoutes from "./routes/properties.js";
 import agentsRoutes from "./routes/agents.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import valuationsRoutes from "./routes/valuations.js";
-import careersRoutes from "./routes/careers.js";
-import bondApplicationsRoutes from "./routes/bond-applications.js";
-import prequalificationApplicationsRoutes from "./routes/prequalification-applications.js";
-import offerToPurchaseRoutes from "./routes/offer-to-purchase.js";
-import complianceRequestsRoutes from "./routes/compliance-requests.js";
-import legalAdviceRequestsRoutes from "./routes/legal-advice-requests.js";
-import jobApplicationsRoutes from "./routes/job-applications.js";
 import { initSocket } from "./socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,41 +34,14 @@ const uploadsDir = path.join(__dirname, "uploads");
 const clientUrl = process.env.CLIENT_URL ?? "http://localhost:5173";
 const allowedOrigins = [
   clientUrl,
-  "https://tanstack-start-app.ndivhopas.workers.dev",
   "http://localhost:8080",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:8080",
 ];
 
-// Identify the Cloudflare Worker origin so we can treat proxied requests specially
-const WORKER_ORIGIN = "https://tanstack-start-app.ndivhopas.workers.dev";
-
 app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: allowedOrigins, credentials: true }));
-
-// Fallback CORS headers - some proxies may strip CORS headers; ensure
-// allowed origins always receive the correct Access-Control-Allow-* headers.
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    // Echo the request Origin back in ACAO to satisfy browsers.
-    // This is intentionally permissive to work around downstream proxies.
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept, Authorization",
-    );
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    );
-  }
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
-
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -93,19 +59,6 @@ app.use(
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === "production" ? 120 : 1000,
-  // Skip rate limiting for requests proxied from our Cloudflare Worker to avoid
-  // counting internal proxy traffic against client rate limits.
-  skip: (req) => {
-    try {
-      const origin = req.headers && req.headers.origin;
-      if (origin && origin === WORKER_ORIGIN) return true;
-      // Also allow an explicit header set by the Worker proxy (optional)
-      if (req.headers && (req.headers['x-worker-proxy'] === '1' || req.headers['x-forwarded-by-worker'] === '1')) return true;
-    } catch (e) {
-      // ignore errors and do not skip by default
-    }
-    return false;
-  },
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests. Please wait a moment and try again.",
@@ -120,13 +73,6 @@ app.use("/api/properties", propertiesRoutes);
 app.use("/api/agents", agentsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/valuations", valuationsRoutes);
-app.use("/api/careers", careersRoutes);
-app.use("/api/bond-applications", bondApplicationsRoutes);
-app.use("/api/prequalification-applications", prequalificationApplicationsRoutes);
-app.use("/api/offer-to-purchase", offerToPurchaseRoutes);
-app.use("/api/compliance-requests", complianceRequestsRoutes);
-app.use("/api/legal-advice-requests", legalAdviceRequestsRoutes);
-app.use("/api/job-applications", jobApplicationsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
@@ -145,10 +91,10 @@ app.set("io", io);
 initSocket(io);
 
 try {
-  await prisma.$connect();
-  console.log("Database authentication succeeded.");
+  await sequelize.authenticate();
+        console.log("Database authentication succeeded.");
 } catch (error) {
-  console.error("Unable to authenticate to the database:", error);
+    console.error("Unable to authenticate to the database:", error);
 }
 
 server.listen(port, () => {

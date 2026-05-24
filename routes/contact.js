@@ -1,20 +1,41 @@
 import express from "express";
-import { ClientRequestService } from "../service/ClientRequestService.js";
+import nodemailer from "nodemailer";
+import { body } from "express-validator";
+import { validateRequest } from "../middleware/validateRequest.js";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
-  try {
-    const { fullName, email, phone, message } = req.body;
-    if (!fullName || !email || !message) {
-      return res.status(400).json({ message: "Name, email, and message are required." });
-    }
+router.post(
+  "/",
+  [
+    body("name").trim().notEmpty().withMessage("Name is required"),
+    body("email").isEmail().withMessage("A valid email is required"),
+    body("inquiry").trim().notEmpty().withMessage("Inquiry type is required"),
+    body("message").trim().notEmpty().withMessage("Message is required"),
+  ],
+  validateRequest,
+  async (req, res) => {
+    const { name, email, inquiry, message, date } = req.body;
 
-    const contact = await ClientRequestService.createContact(req.body);
-    return res.status(201).json({ message: "Contact request submitted.", data: contact });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST ?? "smtp.mailtrap.io",
+      port: Number(process.env.EMAIL_PORT ?? 2525),
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM ?? "no-reply@lightvision.co.za",
+      to: process.env.CONTACT_RECIPIENT ?? process.env.EMAIL_FROM ?? "no-reply@lightvision.co.za",
+      subject: `New contact request from ${name}`,
+      text: `Name: ${name}\nEmail: ${email}\nInquiry: ${inquiry}\nDate: ${date ?? "n/a"}\n\nMessage:\n${message}`,
+      html: `<p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Inquiry:</strong> ${inquiry}</p><p><strong>Date:</strong> ${date ?? "n/a"}</p><p><strong>Message:</strong></p><p>${message}</p>`,
+    });
+
+    res.json({ status: "sent" });
+  },
+);
 
 export default router;

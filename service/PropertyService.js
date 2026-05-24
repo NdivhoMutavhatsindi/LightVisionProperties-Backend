@@ -1,4 +1,5 @@
 import { PropertyRepository } from "../repository/PropertyRepository.js";
+import { UploadService } from "./UploadService.js";
 
 export const PropertyService = {
   getAll(query = {}) {
@@ -11,8 +12,21 @@ export const PropertyService = {
   getById(propertyId) {
     return PropertyRepository.findById(propertyId);
   },
-  create(data) {
-    return PropertyRepository.create(data);
+  async create(data, imageFiles = []) {
+    const images = await Promise.all(
+      imageFiles.map(async (file, index) => {
+        const result = await UploadService.uploadImage(file.buffer, file.filename);
+        return {
+          image_url: result.secure_url || result.url,
+          is_primary: index === 0,
+          display_order: index,
+        };
+      }),
+    );
+
+    const { images: _images, agentId, ...props } = data;
+
+    return PropertyRepository.create({ ...props, images });
   },
   update(propertyId, data) {
     return PropertyRepository.update(propertyId, data);

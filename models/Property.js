@@ -4,11 +4,20 @@ import { sequelize } from "../config/database.js";
 export const Property = sequelize.define(
   "Property",
   {
-    propertyId: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
-      field: "property_id",
+    agentId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "agent_id",
+    },
+    neighborhoodId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "neighborhood_id",
+    },
+    propertyTypeId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: "property_type_id",
     },
     title: {
       type: DataTypes.STRING,
@@ -18,7 +27,12 @@ export const Property = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    location: {
+    purpose: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "sale",
+    },
+    price: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -30,18 +44,67 @@ export const Property = sequelize.define(
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    price: {
-      type: DataTypes.DECIMAL(15, 2),
+    garages: {
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
-    propertyType: {
+    kitchens: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    lounges: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    propertySize: {
       type: DataTypes.STRING,
       allowNull: true,
-      field: "property_type",
+      field: "property_size",
+    },
+    landSize: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "land_size",
+    },
+    address: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    province: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    postalCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "postal_code",
+    },
+    latitude: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    featured: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
     status: {
       type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "available",
+    },
+    mainImage: {
+      type: DataTypes.STRING,
       allowNull: true,
+      field: "main_image",
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -49,14 +112,9 @@ export const Property = sequelize.define(
       defaultValue: DataTypes.NOW,
       field: "created_at",
     },
-    updatedAt: {
-      type: DataTypes.DATE,
-      allowNull: true,
-      field: "updated_at",
-    },
   },
   {
     tableName: "properties",
     timestamps: false,
-  },
+  }
 );

@@ -4,74 +4,49 @@ import { sequelize } from "../config/database.js";
 export const Agent = sequelize.define(
   "Agent",
   {
-    agentId: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      defaultValue: DataTypes.UUIDV4,
-      field: "agent_id",
-    },
-    firstName: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: "first_name",
-    },
-    lastName: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: "last_name",
-    },
-    email: {
-      type: DataTypes.STRING,
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
+      field: "user_id",
     },
-    phone: {
+    position: {
       type: DataTypes.STRING,
       allowNull: true,
-    },
-    facebookUrl: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "facebook_url",
-    },
-    instagramUrl: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "instagram_url",
-    },
-    whatsappUrl: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "whatsapp_url",
-    },
-    twitterUrl: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "twitter_url",
-    },
-    linkedinUrl: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "linkedin_url",
-    },
-    profileImage: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      field: "profile_image",
     },
     bio: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    createdAt: {
-      type: DataTypes.DATE,
+    facebookLink: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "facebook_link",
+    },
+    instagramLink: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "instagram_link",
+    },
+    linkedinLink: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "linkedin_link",
+    },
+    listingsCount: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
-      field: "created_at",
+      defaultValue: 0,
+      field: "listings_count",
+    },
+    experienceYears: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: "experience_years",
     },
   },
   {
     tableName: "agents",
     timestamps: false,
-  },
+  }
 );
